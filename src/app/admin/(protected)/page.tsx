@@ -5,6 +5,7 @@ import { MousePointerClick, BookOpen, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatsCard } from '@/components/admin/StatsCard'
 import { MonthFilter } from '@/components/admin/MonthFilter'
+import { CidadeFilter } from '@/components/admin/CidadeFilter'
 import { TopCoursesChart } from '@/components/admin/TopCoursesChart'
 import { TopProfessorsChart } from '@/components/admin/TopProfessorsChart'
 
@@ -28,6 +29,11 @@ interface ProfessorData {
   count: number
 }
 
+interface Cidade {
+  id: number
+  nome: string
+}
+
 function getCurrentMonth(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -35,20 +41,34 @@ function getCurrentMonth(): string {
 
 export default function AdminDashboardPage() {
   const [month, setMonth] = useState<string>(getCurrentMonth())
+  const [cidade, setCidade] = useState<string>('all')
+  const [cidades, setCidades] = useState<Cidade[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [topCursos, setTopCursos] = useState<CursoData[]>([])
   const [topProfessores, setTopProfessores] = useState<ProfessorData[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Carrega cidades uma vez
+  useEffect(() => {
+    fetch('/api/dashboard/cidades')
+      .then(r => r.json())
+      .then(data => setCidades(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [])
+
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const params = month !== 'all' ? `?month=${month}` : ''
+
+    const params = new URLSearchParams()
+    if (month !== 'all') params.set('month', month)
+    if (cidade !== 'all') params.set('cidade', cidade)
+    const qs = params.toString() ? `?${params.toString()}` : ''
 
     try {
       const [statsRes, cursosRes, professoresRes] = await Promise.all([
-        fetch(`/api/dashboard/stats${params}`),
-        fetch(`/api/dashboard/top-courses${params}`),
-        fetch(`/api/dashboard/top-professors${params}`),
+        fetch(`/api/dashboard/stats${qs}`),
+        fetch(`/api/dashboard/top-courses${qs}`),
+        fetch(`/api/dashboard/top-professors${qs}`),
       ])
 
       const [statsData, cursosData, professoresData] = await Promise.all([
@@ -65,7 +85,7 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [month])
+  }, [month, cidade])
 
   useEffect(() => {
     fetchData()
@@ -75,7 +95,10 @@ export default function AdminDashboardPage() {
     ? 'todos os tempos'
     : new Date(month + '-01').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
-  // Adaptar para o formato esperado pelos charts
+  const cidadeLabel = cidade === 'all'
+    ? 'todas as cidades'
+    : cidades.find(c => String(c.id) === cidade)?.nome ?? ''
+
   const chartCursos = topCursos.map(c => ({
     courseId: String(c.cursoId),
     courseTitle: c.cursoTitulo,
@@ -92,15 +115,18 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Cabeçalho com filtro */}
+      {/* Cabeçalho com filtros */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Visão Geral</h2>
           <p className="text-sm text-gray-500 capitalize">
-            Período: {periodLabel}
+            {cidadeLabel} · {periodLabel}
           </p>
         </div>
-        <MonthFilter value={month} onChange={setMonth} />
+        <div className="flex flex-wrap gap-2">
+          <CidadeFilter value={cidade} onChange={setCidade} cidades={cidades} />
+          <MonthFilter value={month} onChange={setMonth} />
+        </div>
       </div>
 
       {/* Cards de métricas */}

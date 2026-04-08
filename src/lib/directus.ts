@@ -1,7 +1,7 @@
 import { createDirectus, rest } from '@directus/sdk'
 import type { Schema } from '@/types/directus'
 
-const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_URL!
+const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_URL!.replace(/\/$/, '')
 
 export const directus = createDirectus<Schema>(directusUrl).with(rest())
 

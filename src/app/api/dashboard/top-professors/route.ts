@@ -8,18 +8,22 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const month = searchParams.get('month')
+  const cidade = searchParams.get('cidade')
 
   const directusUrl = process.env.DIRECTUS_URL!.replace(/\/$/, '')
   const adminToken = process.env.DIRECTUS_ADMIN_TOKEN!
 
   let filterParams = ''
   if (month && month !== 'all') {
-    filterParams = `&filter[mes_ano][_eq]=${month}`
+    filterParams += `&filter[mes_ano][_eq]=${month}`
+  }
+  if (cidade && cidade !== 'all') {
+    filterParams += `&filter[cidade][_eq]=${cidade}`
   }
 
   try {
     const res = await fetch(
-      `${directusUrl}/items/iamac_interesses?fields=professor.id,professor.nome,curso.titulo&limit=-1${filterParams}`,
+      `${directusUrl}/items/iamac_interesses?fields=curso.id,curso.titulo,curso.professor.id,curso.professor.nome&limit=-1${filterParams}`,
       { headers: { Authorization: `Bearer ${adminToken}` } }
     )
 
@@ -30,12 +34,13 @@ export async function GET(request: NextRequest) {
     const countMap: Record<string, { professorId: number; professorNome: string; cursoTop: string; count: number }> = {}
 
     for (const item of interesses ?? []) {
-      const key = item.professor?.id
+      const professor = item.curso?.professor
+      const key = professor?.id
       if (!key) continue
       if (!countMap[key]) {
         countMap[key] = {
-          professorId: item.professor.id,
-          professorNome: item.professor.nome,
+          professorId: professor.id,
+          professorNome: professor.nome,
           cursoTop: item.curso?.titulo ?? '',
           count: 0,
         }

@@ -37,7 +37,6 @@ export async function getCursosByCidade(cidadeSlug: string): Promise<Curso[]> {
       'mensagem_whatsapp', 'ordem', 'data_curso', 'duracao', 'nivel', 'vagas',
       'categoria.id', 'categoria.nome', 'categoria.slug', 'categoria.icone',
       'professor.id', 'professor.nome', 'professor.foto', 'professor.whatsapp',
-      'cidade.id', 'cidade.nome', 'cidade.slug', 'cidade.whatsapp',
     ].join(',')
 
     const url = `${BASE_URL}/items/iamac_cursos`
