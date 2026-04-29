@@ -28,6 +28,21 @@ jobs:
         env:
           NEXT_PUBLIC_DIRECTUS_URL: ${{ secrets.NEXT_PUBLIC_DIRECTUS_URL }}
 
+      - name: Prepare standalone structure
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+
+      - name: Create .env.production
+        run: |
+          cat > .env.production << 'EOF'
+          NEXT_PUBLIC_DIRECTUS_URL=${{ secrets.NEXT_PUBLIC_DIRECTUS_URL }}
+          DIRECTUS_URL=${{ secrets.DIRECTUS_URL }}
+          DIRECTUS_ADMIN_TOKEN=${{ secrets.DIRECTUS_ADMIN_TOKEN }}
+          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+          SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+          EOF
+
       - name: Create restart trigger
         run: mkdir -p tmp && touch tmp/restart.txt
 
@@ -46,6 +61,8 @@ jobs:
             **/.git*
             **/.git*/**
             **/node_modules/**
-            **/.env*
+            !**/.next/standalone/node_modules/**
+            **/.env.local
+            **/.env.example
             **/src/**
             **/.github/**
